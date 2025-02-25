@@ -1,0 +1,68 @@
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectItem } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+
+const ModelInterpreter = () => {
+  const [file, setFile] = useState(null);
+  const [method, setMethod] = useState("lime");
+  const [result, setResult] = useState(null);
+  const { toast } = useToast();
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleMethodChange = (value) => {
+    setMethod(value);
+  };
+
+  const handleSubmit = async () => {
+    if (!file) {
+      toast({ title: "Error", description: "Please upload a file." });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("method", method);
+
+    try {
+      const response = await fetch("http://localhost:5000/explain", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to process file." });
+    }
+  };
+
+  return (
+    <div className="p-4">
+      <Card>
+        <CardContent className="space-y-4">
+          <Input type="file" onChange={handleFileChange} />
+          <Select value={method} onValueChange={handleMethodChange}>
+            <SelectItem value="lime">LIME</SelectItem>
+            <SelectItem value="shap">SHAP</SelectItem>
+            <SelectItem value="eli5">ELI5</SelectItem>
+          </Select>
+          <Button onClick={handleSubmit}>Interpret Model</Button>
+        </CardContent>
+      </Card>
+      {result && (
+        <Card className="mt-4">
+          <CardContent>
+            <pre>{JSON.stringify(result, null, 2)}</pre>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default ModelInterpreter;
